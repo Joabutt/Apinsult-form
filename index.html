@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>APInsults</title>
+    <meta name="description" content="Insults for APInsults, very minimal" />
+    <meta name="keywords" content="Insults, form" />
+    <meta name="author" content="Joabutt" />
+    <link rel="shortcut icon" href="../favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="css/normalize.css" />
+    <link rel="stylesheet" type="text/css" href="css/demo.css" />
+    <link rel="stylesheet" type="text/css" href="css/component.css" />
+    <script src="js/modernizr.custom.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Top Navigation -->
+
+      <header class="codrops-header">
+        <h1>APInsults<span>Post your best insults here</span></h1>
+      </header>
+      <section>
+        <form id="theForm" class="simform">
+          <div class="simform-inner">
+            <ol class="questions">
+              <li>
+                <span><label for="q1">Your Insult: </label></span>
+                <input id="q1" name="q1" type="text" />
+              </li>
+              <li>
+                <span><label for="q2">Nickname:</label></span>
+                <input id="q2" name="q2" type="text" />
+              </li>
+            </ol>
+            <!-- /questions -->
+            <button class="submit" type="submit">Send answers</button>
+            <div class="controls">
+              <button class="next"></button>
+              <div class="progress"></div>
+              <span class="number">
+                <span class="number-current"></span>
+                <span class="number-total"></span>
+              </span>
+              <span class="error-message"></span>
+            </div>
+            <!-- / controls -->
+          </div>
+          <!-- /simform-inner -->
+          <span class="final-message"></span>
+        </form>
+        <!-- /simform -->
+      </section>
+    </div>
+    <!-- /container -->
+    <script src="js/classie.js"></script>
+    <script src="js/stepsForm.js"></script>
+    <script>
+      var theForm = document.getElementById("theForm");
+      //disable form autocomplete
+      theForm.setAttribute("autocomplete", "off");
+
+      new stepsForm(theForm, {
+        onSubmit: function (form) {
+          // hide form
+          classie.addClass(theForm.querySelector(".simform-inner"), "hide");
+
+          /*
+					form.submit()
+					or
+					AJAX request (maybe show loading indicator while we don't have an answer..)
+					*/
+
+          // let's just simulate something...
+          var messageEl = theForm.querySelector(".final-message");
+          messageEl.innerHTML = "Insulted!";
+          classie.addClass(messageEl, "show");
+		  var input = document.getElementById("q1").value
+          async function query(data) {
+            const response = await fetch(
+              "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english",
+              {
+                headers: {
+                  Authorization: "Bearer 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",
+                },
+                method: "POST",
+                body: JSON.stringify(data),
+              }
+            );
+            const result = await response.json();
+            return result;
+          }
+
+          query({ inputs: input }).then((response) => {
+            const out = JSON.stringify(response)
+			const negative = out.search(`"NEGATIVE"`)
+			const output = out.slice(negative)
+			const scoreout = output.search(`"score"`)
+			const finalout = output.slice(scoreout)
+			const newout = finalout.replace("score", "")
+			const newout1 = newout.replace(/"/g, "")
+			const newout2 = newout1.replace(`}`, "")
+			const newout3 = newout2.replace(/]/g, "")
+			const newout4 = newout3.replace(`:`, "")
+			console.log(newout4);
+			if(newout4 < 0.9) {
+				alert("Your comment is not toxic enough bozo go get a fucking life")
+        throw new Error("Comment not toxic enough bozo go get better fucking insults");
+			}
+			let xhr = new XMLHttpRequest();
+			xhr.open("GET", `https://cors-apinsult.onrender.com/https://apinsult.deta.dev/post/${input}`)
+      xhr.setRequestHeader("X-Requested-With", "message/http")
+			xhr.send()
+          });
+        },
+      });
+    </script>
+  </body>
+</html>
